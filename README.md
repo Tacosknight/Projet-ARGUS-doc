@@ -44,8 +44,10 @@ Dans le secteur de l'audioprothèse, la gestion administrative repose sur un dou
     - Vert (Match) : Données conformes, S/N réconcilié, marge positive.
     - Orange (Warning) : Tolérance floue sur le modèle ou TVA reconstituée.
     - Rouge (Error) : Appareil non refacturé, vente à perte ou divergence arithmétique.
-- **Interface Web Mobile-First & Scanner Intégré** :
-  - Serveur local avec affichage d'un QR Code dans le terminal pour connexion smartphone instantanée en Wi-Fi.
+- **Lanceurs Autonomes & Interface Web Mobile-First** :
+  - Scripts 1-clic pour Linux/macOS et Windows avec configuration automatique de l'environnement virtuel et ouverture du navigateur.
+  - Script Windows dédié au traitement batch avec ouverture automatique du classeur Excel.
+  - Affichage d'un QR Code dans le terminal pour connexion smartphone instantanée en Wi-Fi.
   - Déclenchement de la caméra mobile pour numériser directement les factures au comptoir.
   - Registre interactif avec modale d'édition manuelle des champs détectés.
 - **Export Managérial Excel & Base SQLite** :
@@ -97,32 +99,33 @@ flowchart TD
 ```text
 facture-checker/
 ├── core/
-│   ├── preprocessor.py       # Détection contours, homographie 4 points et binarisation
-│   ├── ocr_engine.py         # Moteur PaddleOCR et conversion PDF multi-pages
-│   ├── ocr_cache.py          # Système de cache persistant des sorties OCR
-│   ├── multipage.py          # Découpage, consolidation et fusion multi-pages
-│   ├── parser.py             # Extraction champs, détection Achat/Vente et filtrage S/N
-│   ├── post_corrector.py     # Correction heuristique post-OCR (chiffres, SIRET, dates)
-│   ├── validator.py          # Contrôles d'intégrité (Luhn, TVA, équation fiscale, doublons)
-│   ├── reconciliation.py     # Moteur de réconciliation des prothèses par S/N
-│   └── comparator.py         # Comparateur bilatéral direct Fournisseur ↔ Client
+│   ├── preprocessor.py        # Détection contours, homographie 4 points et binarisation
+│   ├── ocr_engine.py          # Moteur PaddleOCR et conversion PDF multi-pages
+│   ├── ocr_cache.py           # Système de cache persistant des sorties OCR
+│   ├── multipage.py           # Découpage, consolidation et fusion multi-pages
+│   ├── parser.py              # Extraction champs, détection Achat/Vente et filtrage S/N
+│   ├── post_corrector.py      # Correction heuristique post-OCR (chiffres, SIRET, dates)
+│   ├── validator.py           # Contrôles d'intégrité (Luhn, TVA, équation fiscale, doublons)
+│   ├── reconciliation.py      # Moteur de réconciliation des prothèses par S/N
+│   └── comparator.py          # Comparateur bilatéral direct Fournisseur ↔ Client
 │
 ├── storage/
-│   ├── database.py           # Couche d'accès SQLite et indexation
-│   └── export_excel.py       # Génération dynamique du rapport Excel avec styles conditionnels
+│   ├── database.py            # Couche d'accès SQLite et indexation
+│   └── export_excel.py        # Génération dynamique du rapport Excel avec styles conditionnels
 │
 ├── web/
-│   ├── app.py                # API REST FastAPI et contrôleurs
+│   ├── app.py                 # API REST FastAPI et contrôleurs
 │   └── templates/
-│       └── index.html        # Interface Web réactive (Scanner, Comparateur, Registre)
+│       └── index.html         # Interface Web réactive (Scanner, Comparateur, Registre)
 │
-├── tests/                    # Suite de tests unitaires et d'intégration
-├── input_photos/             # Répertoire d'entrée par défaut pour les images
-├── requirements.txt          # Dépendances Python épinglées
-├── main.py                   # Point d'entrée principal (CLI batch et mode web)
-├── server.py                 # Lanceur du serveur mobile avec QR Code terminal
-├── lancer_serveur_linux.sh   # Script de démarrage rapide 1-clic pour Linux / macOS
-└── lancer_serveur_windows.bat# Script de démarrage rapide 1-clic pour Windows
+├── tests/                     # Suite de tests unitaires et d'intégration
+├── input_photos/              # Répertoire d'entrée par défaut pour les images
+├── requirements.txt           # Dépendances Python épinglées
+├── main.py                    # Point d'entrée principal (CLI batch et mode web)
+├── server.py                  # Lanceur du serveur mobile avec QR Code terminal
+├── lancer_serveur_linux.sh    # Lanceur 1-clic Linux / macOS (venv + serveur + navigateur)
+├── lancer_serveur_windows.bat # Lanceur 1-clic Windows (détection Python + venv + navigateur)
+└── traiter_dossier_batch.bat  # Lanceur 1-clic Windows pour audit batch + ouverture Excel
 ```
 
 ---
@@ -131,28 +134,44 @@ facture-checker/
 
 ### 1. Lancement 1-Clic
 
-Le moyen le plus simple de démarrer ARGUS est d'utiliser le lanceur correspondant à votre système :
+Des lanceurs automatisés permettent de démarrer l'application sans configuration manuelle préalable :
 
-#### Sous Linux / macOS
-```bash
-chmod +x lancer_serveur_linux.sh
-./lancer_serveur_linux.sh
-```
+#### Interface Web & Scanner Mobile
 
-#### Sous Windows
-Double-cliquez sur :
-```cmd
-lancer_serveur_windows.bat
-```
+- **Sous Linux / macOS** :
+  ```bash
+  chmod +x lancer_serveur_linux.sh
+  ./lancer_serveur_linux.sh
+  ```
+  Le script prépare l'environnement virtuel (`venv`), installe les dépendances si nécessaire, démarre le serveur FastAPI et **ouvre automatiquement votre navigateur** sur `http://localhost:8000`.
+
+- **Sous Windows** :
+  Double-cliquez sur :
+  ```cmd
+  lancer_serveur_windows.bat
+  ```
+  Le script vérifie la présence de Python (via `python` ou le launcher `py -3`), redirige automatiquement vers le site officiel en cas d'absence, initialise le `venv`, met à jour `pip`, ouvre l'interface dans votre navigateur par défaut et affiche le QR Code dans la console.
+
+#### Traitement par Lot 1-Clic (Windows)
+
+Pour auditer d'un coup l'ensemble des documents placés dans le dossier `input_photos` :
+- Double-cliquez sur :
+  ```cmd
+  traiter_dossier_batch.bat
+  ```
+  Ce script exécute l'analyse complète (contrôles légaux, extraction S/N, rapprochement), génère `factures_synthese.xlsx` et **ouvre immédiatement le fichier dans Microsoft Excel ou votre tableur par défaut**.
 
 > [!TIP]
-> Le script configure automatiquement l'environnement virtuel Python, installe les dépendances nécessaires et démarre le serveur web local.
+> Sur Linux ou macOS, l'équivalent en une ligne de commande s'exécute via :
+> ```bash
+> ./venv/bin/python3 main.py --input-dir input_photos --output-excel factures_synthese.xlsx && xdg-open factures_synthese.xlsx
+> ```
 
 ---
 
 ### 2. Installation Manuelle
 
-Si vous préférez configurer l'environnement manuellement :
+Si vous préférez gérer l'environnement à la main :
 
 ```bash
 # Cloner le dépôt
